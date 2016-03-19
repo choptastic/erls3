@@ -230,7 +230,7 @@ handle_info({ibrowse_async_response_end,RequestId}, State = #state{pending=P})->
 		        ok
 		    end,
 		    handle_http_response(R),
-		    erls3:notify([{time, timer:now_diff(now(), Started)/1000 }| Opts]),
+		    erls3:notify([{time, timer:now_diff(os:timestamp(), Started)/1000 }| Opts]),
 			  {noreply,State#state{pending=gb_trees:delete(RequestId, P)}};
 		none -> {noreply,State}
 			%% the requestid isn't here, probably the request was deleted after a timeout
@@ -383,7 +383,7 @@ genericRequest(From, #state{ssl=SSL, access_key=AKI, secret_key=SAK, timeout=Tim
         Fd ->
             case ibrowse:send_req(Url, Headers,  Method, Contents,Options, Timeout) of
                 {ibrowse_req_id,RequestId} ->
-                    Pendings = gb_trees:insert(RequestId,#request{pid=From, to_file=Fd, opts=Params, started=now(),  callback=Callback},P),
+                    Pendings = gb_trees:insert(RequestId,#request{pid=From, to_file=Fd, opts=Params, started=os:timestamp(),  callback=Callback},P),
                     {noreply, State#state{pending=Pendings}};
                 {ok, "200", H, B}->
                    {reply, {ok, H, Callback(B, H)}, State};
