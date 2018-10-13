@@ -15,3 +15,4 @@ ebin/erls3util.beam
 ebin/file_events.beam
 ebin/console_events.beam
 .eunit
+*~
