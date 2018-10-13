@@ -162,7 +162,7 @@ handle_call({policy, {struct, Attrs}=Policy}, _From, #state{access_key=Access, s
       %?DEBUG("Policy = ~p",[mochijson2:encode(Policy)]),
   Enc =base64:encode(
         list_to_binary(mochijson2:encode(Policy))),
-  Signature = base64:encode(crypto:sha_mac(Secret, Enc)),
+  Signature = base64:encode(crypto:hmac(sha, Secret, Enc)),
   {reply, [{"AWSAccessKeyId",list_to_binary(Access)},
            {"Policy", Enc}, 
            {"Signature", Signature}
@@ -230,7 +230,7 @@ handle_info({ibrowse_async_response_end,RequestId}, State = #state{pending=P})->
 		        ok
 		    end,
 		    handle_http_response(R),
-		    erls3:notify([{time, timer:now_diff(now(), Started)/1000 }| Opts]),
+		    erls3:notify([{time, timer:now_diff(os:timestamp(), Started)/1000 }| Opts]),
 			  {noreply,State#state{pending=gb_trees:delete(RequestId, P)}};
 		none -> {noreply,State}
 			%% the requestid isn't here, probably the request was deleted after a timeout
@@ -313,7 +313,7 @@ stringToSign ( Verb, ContentType, Date, Bucket, Path, OriginalHeaders ) ->
     erls3util:string_join( Parts, "\n") ++ canonicalizedResource(Bucket, Path).
     
 sign (Key,Data) ->
-    binary_to_list( base64:encode( crypto:sha_mac(Key,Data) ) ).
+    binary_to_list( base64:encode( crypto:hmac(sha, Key,Data) ) ).
 
 queryParams( [] ) -> "";
 queryParams( L ) -> 
@@ -332,7 +332,7 @@ buildContentHeaders( {_F, read} = C, ContentType, AdditionalHeaders ) ->
       {"Content-Length", content_length(C)}
      | AdditionalHeaders];
 buildContentHeaders( Contents, ContentType, AdditionalHeaders ) -> 
-    ContentMD5 = crypto:md5(Contents),
+    ContentMD5 = crypto:hash(md5, Contents),
     [{"Content-MD5", binary_to_list(base64:encode(ContentMD5))},
      {"Content-Type", ContentType}
      | AdditionalHeaders].
@@ -383,7 +383,7 @@ genericRequest(From, #state{ssl=SSL, access_key=AKI, secret_key=SAK, timeout=Tim
         Fd ->
             case ibrowse:send_req(Url, Headers,  Method, Contents,Options, Timeout) of
                 {ibrowse_req_id,RequestId} ->
-                    Pendings = gb_trees:insert(RequestId,#request{pid=From, to_file=Fd, opts=Params, started=now(),  callback=Callback},P),
+                    Pendings = gb_trees:insert(RequestId,#request{pid=From, to_file=Fd, opts=Params, started=os:timestamp(),  callback=Callback},P),
                     {noreply, State#state{pending=Pendings}};
                 {ok, "200", H, B}->
                    {reply, {ok, H, Callback(B, H)}, State};
