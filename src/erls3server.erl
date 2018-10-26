@@ -332,7 +332,7 @@ buildContentHeaders( {_F, read} = C, ContentType, AdditionalHeaders ) ->
       {"Content-Length", content_length(C)}
      | AdditionalHeaders];
 buildContentHeaders( Contents, ContentType, AdditionalHeaders ) -> 
-    ContentMD5 = crypto:md5(Contents),
+    ContentMD5 = crypto:hash(md5, Contents),
     [{"Content-MD5", binary_to_list(base64:encode(ContentMD5))},
      {"Content-Type", ContentType}
      | AdditionalHeaders].
