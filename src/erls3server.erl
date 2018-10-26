@@ -162,7 +162,7 @@ handle_call({policy, {struct, Attrs}=Policy}, _From, #state{access_key=Access, s
       %?DEBUG("Policy = ~p",[mochijson2:encode(Policy)]),
   Enc =base64:encode(
         list_to_binary(mochijson2:encode(Policy))),
-  Signature = base64:encode(crypto:sha_mac(Secret, Enc)),
+  Signature = base64:encode(crypto:hmac(sha, Secret, Enc)),
   {reply, [{"AWSAccessKeyId",list_to_binary(Access)},
            {"Policy", Enc}, 
            {"Signature", Signature}
@@ -313,7 +313,7 @@ stringToSign ( Verb, ContentType, Date, Bucket, Path, OriginalHeaders ) ->
     erls3util:string_join( Parts, "\n") ++ canonicalizedResource(Bucket, Path).
     
 sign (Key,Data) ->
-    binary_to_list( base64:encode( crypto:sha_mac(Key,Data) ) ).
+    binary_to_list( base64:encode(crypto:hmac(sha, Key,Data) ) ).
 
 queryParams( [] ) -> "";
 queryParams( L ) -> 
